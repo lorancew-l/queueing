@@ -26,7 +26,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def plot(self):
         self.plotter.params = self.get_params()
-        self.plotter.plot_stack.append(self.plotter.plot_test)
+        self.plotter.plot_stack.append(self.plotter.plot_hist)
         self.plotter.plot()
 
     def get_params(self):
@@ -35,4 +35,5 @@ class MainWindow(QtWidgets.QMainWindow):
             'a': int(self.a.text()),
             'b': int(self.b.text()),
             'm': int(self.m.text()),
+            'r': int(self.r.text()),
         }

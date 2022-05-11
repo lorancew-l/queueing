@@ -1,9 +1,16 @@
-
+import seaborn as sns
 import numpy as np
 from matplotlib.pyplot import figure
+import math
 
 # виды маркеров https://matplotlib.org/stable/api/markers_api.html
 PLOT_PROPS = {
+    'hist': {
+        'color': '#69e089',
+        'alpha': 0.8,
+        'edgecolor': '#1ca340',
+        'label': r'Реальное распределение',
+    },
     'x_label': r'$\rho$',
     'y_label': r'$N(\rho, m)$',
     'analytic': {
@@ -35,6 +42,41 @@ PLOT_PROPS = {
 
 def func(x, m):
     return (x/(1-x)) - (x*(m+2)*x ** (m+1)/(1-x ** (m+2)))
+
+
+def generate_random_numbers(low, high, size):
+    rng = np.random.default_rng()
+
+    numbers = rng.random(size) * (high-low) + low
+
+    return numbers
+
+
+def erlang_flow(x, _lambda, r):
+    return _lambda * np.power(_lambda * x, r - 1) * np.exp(-_lambda * x) / math.factorial(r - 1)
+
+
+def get_erlang_flow_distribution(left, right, _lambda, r):
+    rng = np.random.default_rng()
+
+    n = int(1e5)
+    z = np.vectorize(erlang_flow)
+    h = np.max(z(np.linspace(left, right, n), _lambda, r))
+
+    res_x = np.array([])
+
+    while True:
+        w = rng.random(1)[0] * h
+
+        if len(res_x) < n:
+            x = generate_random_numbers(left, right, 40)
+            x = x[w < z(x, _lambda, r)]
+            res_x = np.concatenate((res_x, x))
+        else:
+            res_x = res_x[0:n]
+            break
+
+    return res_x
 
 
 class Plotter:
@@ -77,11 +119,25 @@ class Plotter:
         self.axis.grid(color=grid_color, linestyle='-',
                        linewidth=0.25, alpha=0.6)
 
+    def plot_hist(self):
+        a = self.params['a']
+        b = self.params['b']
+        r = self.params['r']
+
+        x_l = np.linspace(a, b, int(1e5))
+        y_l = erlang_flow(x_l, 1, r)
+        x = get_erlang_flow_distribution(a, b, 1, r)
+
+        self.axis.plot(x_l, y_l)
+        sns.histplot(x, bins=40, ax=self.axis, stat="density",
+                     **PLOT_PROPS['hist'])
+
     def plot_test(self):
         a = self.params['a']
         b = self.params['b']
         m = self.params['m']
         N = self.params['N']
+        r = self.params['r']
 
         k = np.zeros(N)
         exper = np.array([])
@@ -106,11 +162,11 @@ class Plotter:
             k_kurent = 0
             queue = 0
 
-            u = rng.random()
+            u = np.array([np.log(rng.random()) for _ in range(r)])
 
-            TL = -1 / L * np.log(u)
-            TM = - np.log(u)
-
+            # TL = -1 / L * np.log(u)
+            TL = -1 / (2*L) * np.sum(u)
+            TM = - np.sum(u)
             t_request = TL
 
             t_max = 5 * N
