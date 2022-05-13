@@ -11,6 +11,12 @@ PLOT_PROPS = {
         'edgecolor': '#1ca340',
         'label': r'Реальное распределение',
     },
+    'analytic_hist': {
+        'color': '#3f35d4',
+        'alpha': 1.0,
+        'linewidth': 2,
+        'label': r'Теория',
+    },
     'x_label': r'$\rho$',
     'y_label': r'$N(\rho, m)$',
     'analytic': {
@@ -128,9 +134,12 @@ class Plotter:
         y_l = erlang_flow(x_l, 1, r)
         x = get_erlang_flow_distribution(a, b, 1, r)
 
-        self.axis.plot(x_l, y_l)
+        self.axis.plot(x_l, y_l, **PLOT_PROPS['analytic_hist'])
         sns.histplot(x, bins=40, ax=self.axis, stat="density",
                      **PLOT_PROPS['hist'])
+
+        self.axis.set_xlabel('x_label')
+        self.axis.set_ylabel('y_label')
 
     def plot_test(self):
         a = self.params['a']
@@ -162,11 +171,10 @@ class Plotter:
             k_kurent = 0
             queue = 0
 
-            u = np.array([np.log(rng.random()) for _ in range(r)])
-
+            u = np.log(np.array([rng.random() for _ in range(r)]))
             # TL = -1 / L * np.log(u)
-            TL = -1 / (2*L) * np.sum(u)
-            TM = - np.sum(u)
+            TL = -1 / (L) * np.sum(u)
+            TM = - np.log(rng.random())
             t_request = TL
 
             t_max = 5 * N
@@ -187,8 +195,8 @@ class Plotter:
                     elif queue < m:
                         queue += 1
                         k_kurent += 1
-                    u = rng.random()
-                    TL = -1 / L * np.log(u)
+                    u = np.log(np.array([rng.random() for _ in range(r)]))
+                    TL = -1 / (L) * np.sum(u)
                     t_request += TL
 
                 if t > t_service and k_kurent > 0:
