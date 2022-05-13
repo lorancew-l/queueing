@@ -36,4 +36,5 @@ class MainWindow(QtWidgets.QMainWindow):
             'b': int(self.b.text()),
             'm': int(self.m.text()),
             'r': int(self.r.text()),
+            'bins': int(self.bins.text()),
         }

@@ -129,13 +129,14 @@ class Plotter:
         a = self.params['a']
         b = self.params['b']
         r = self.params['r']
+        bins = self.params['bins']
 
         x_l = np.linspace(a, b, int(1e5))
         y_l = erlang_flow(x_l, 1, r)
         x = get_erlang_flow_distribution(a, b, 1, r)
 
         self.axis.plot(x_l, y_l, **PLOT_PROPS['analytic_hist'])
-        sns.histplot(x, bins=40, ax=self.axis, stat="density",
+        sns.histplot(x, bins=bins, ax=self.axis, stat="density",
                      **PLOT_PROPS['hist'])
 
         self.axis.set_xlabel('x_label')
