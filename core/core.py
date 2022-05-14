@@ -126,7 +126,7 @@ class Plotter:
         self.axis.set_xlabel(r'$\tau$')
         self.axis.set_ylabel(r'$\phi(\tau)$')
 
-    def plot_test(self):
+    def plot_test(self, mode='ee'):
         a = self.params['a']
         b = self.params['b']
         m = self.params['m']
@@ -158,8 +158,17 @@ class Plotter:
 
             u = np.array([rng.random() for _ in range(r)])
 
-            TL = -1 / (L * r) * np.sum(np.log(u))
-            TM = - np.log(rng.random())
+            if (mode == 'em'):
+                TL = -1 / (L * r) * np.sum(np.log(u))
+                TM = - np.log(rng.random())
+
+            if (mode == 'me'):
+                TL = -1 / L * np.log(rng.random())
+                TM = -1 / r * np.sum(np.log(u))
+
+            if (mode == 'ee'):
+                TL = -1 / (L * r) * np.sum(np.log(u))
+                TM = -1 / r * np.sum(np.log(u))
 
             t_request = TL
 
@@ -175,15 +184,27 @@ class Plotter:
                 if t > t_request:
                     if k_kurent == 0:
                         k_kurent += 1
-                        u = rng.random()
-                        TM = -np.log(u)
+
+                        if (mode == 'em'):
+                            TM = - np.log(rng.random())
+
+                        if (mode in ['me', 'ee']):
+                            u = np.array([rng.random() for _ in range(r)])
+                            TM = -1 / r * np.sum(np.log(u))
+
                         t_service = t_request + TM
                     elif queue < m:
                         queue += 1
                         k_kurent += 1
 
                     u = np.array([rng.random() for _ in range(r)])
-                    TL = -1 / (L * r) * np.sum(np.log(u))
+
+                    if (mode in ['em', 'ee']):
+                        TL = -1 / (L * r) * np.sum(np.log(u))
+
+                    if (mode == 'me'):
+                        TL = -1 / L * np.log(rng.random())
+
                     t_request += TL
 
                 if t > t_service and k_kurent > 0:
@@ -192,8 +213,14 @@ class Plotter:
                     else:
                         queue -= 1
                         k_kurent -= 1
-                        u = rng.random()
-                        TM = - np.log(u)
+
+                        if (mode == 'em'):
+                            TM = - np.log(rng.random())
+
+                        if (mode in ['me', 'ee']):
+                            u = np.array([rng.random() for _ in range(r)])
+                            TM = -1 / r * np.sum(np.log(u))
+
                         t_service += TM
 
                 t += dt
