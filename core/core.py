@@ -9,7 +9,7 @@ PLOT_PROPS = {
         'color': '#69e089',
         'alpha': 0.8,
         'edgecolor': '#1ca340',
-        'label': r'Реальное распределение',
+        'label': r'Распределение на основе равномерного',
     },
     'analytic_hist': {
         'color': '#3f35d4',
@@ -20,13 +20,13 @@ PLOT_PROPS = {
     'x_label': r'$\rho$',
     'y_label': r'$N(\rho, m)$',
     'analytic': {
-        'color': '#3f35d4',
+        'color': '#8732a8',
         'alpha': 1.0,
         'linewidth': 2,
         'label': r'Теория',
     },
     'monte_carlo': {
-        'color': '#d42086',
+        'color': '#328da8',
         'alpha': 1.0,
         'marker': '8',
         'markersize': 8,
@@ -35,7 +35,7 @@ PLOT_PROPS = {
 
     },
     'deviation': {
-        'color': '#16adc4',
+        'color': '#32a867',
         'alpha': 1.0,
         'marker': '.',
         'markersize': 12,
@@ -62,27 +62,13 @@ def erlang_flow(x, _lambda, r):
     return _lambda * np.power(_lambda * x, r - 1) * np.exp(-_lambda * x) / math.factorial(r - 1)
 
 
-def get_erlang_flow_distribution(left, right, _lambda, r):
+def get_tau(_lambda, r):
     rng = np.random.default_rng()
+    return -1 / (_lambda) * np.sum(np.log(np.array([rng.random() for _ in range(r)])))
 
-    n = int(1e5)
-    z = np.vectorize(erlang_flow)
-    h = np.max(z(np.linspace(left, right, n), _lambda, r))
 
-    res_x = np.array([])
-
-    while True:
-        w = rng.random(1)[0] * h
-
-        if len(res_x) < n:
-            x = generate_random_numbers(left, right, 40)
-            x = x[w < z(x, _lambda, r)]
-            res_x = np.concatenate((res_x, x))
-        else:
-            res_x = res_x[0:n]
-            break
-
-    return res_x
+def get_erlang_flow_distribution(_lambda, r):
+    return [get_tau(_lambda, r) for _ in range(100000)]
 
 
 class Plotter:
@@ -126,21 +112,19 @@ class Plotter:
                        linewidth=0.25, alpha=0.6)
 
     def plot_hist(self):
-        a = self.params['a']
-        b = self.params['b']
         r = self.params['r']
         bins = self.params['bins']
 
-        x_l = np.linspace(a, b, int(1e5))
+        x = get_erlang_flow_distribution(1, r)
+        x_l = np.linspace(np.min(x), np.max(x), int(1e5))
         y_l = erlang_flow(x_l, 1, r)
-        x = get_erlang_flow_distribution(a, b, 1, r)
 
         self.axis.plot(x_l, y_l, **PLOT_PROPS['analytic_hist'])
         sns.histplot(x, bins=bins, ax=self.axis, stat="density",
                      **PLOT_PROPS['hist'])
 
-        self.axis.set_xlabel('x_label')
-        self.axis.set_ylabel('y_label')
+        self.axis.set_xlabel(r'$\tau$')
+        self.axis.set_ylabel(r'$\phi(\tau)$')
 
     def plot_test(self):
         a = self.params['a']
@@ -158,7 +142,7 @@ class Plotter:
         L_graph = np.array([])
         experiment_graph_y = np.array([])
 
-        step = 0.2
+        step = 0.3
 
         rng = np.random.default_rng()
 
@@ -172,10 +156,11 @@ class Plotter:
             k_kurent = 0
             queue = 0
 
-            u = np.log(np.array([rng.random() for _ in range(r)]))
-            # TL = -1 / L * np.log(u)
-            TL = -1 / (L) * np.sum(u)
+            u = np.array([rng.random() for _ in range(r)])
+
+            TL = -1 / (L * r) * np.sum(np.log(u))
             TM = - np.log(rng.random())
+
             t_request = TL
 
             t_max = 5 * N
@@ -196,8 +181,9 @@ class Plotter:
                     elif queue < m:
                         queue += 1
                         k_kurent += 1
-                    u = np.log(np.array([rng.random() for _ in range(r)]))
-                    TL = -1 / (L) * np.sum(u)
+
+                    u = np.array([rng.random() for _ in range(r)])
+                    TL = -1 / (L * r) * np.sum(np.log(u))
                     t_request += TL
 
                 if t > t_service and k_kurent > 0:
